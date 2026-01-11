@@ -1,3 +1,11 @@
 # https://dart.dev/guides/libraries/private-files
 # Created by `dart pub`
 .dart_tool/
+# Ignore all EQ logs / benchmark data
+demo/data/eqlog_*
+demo/data/*.log
+demo/data/*.txt
+demo/data/*.gz
+
+# Explicitly allow the frozen sample
+!demo/data/eqlog_Blastshadow_mischief.txt.gz
