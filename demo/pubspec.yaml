@@ -1,0 +1,19 @@
+name: demo
+description: Local benchmark and usage demo for byte_search.
+version: 0.0.0
+# Local demo for byte_search package.
+# Not published.
+publish_to: none
+
+environment:
+  sdk: ^3.10.4
+
+# Add regular dependencies here.
+dependencies:
+  path: ^1.9.0
+  byte_search:
+    path: ../byte_search
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
