@@ -22,7 +22,7 @@ class Patterns {
   static const String dashesPeriod = '.--';
   static const String handsYouTheMoney = ' hands you the Money (';
   static const String thatWasSentFrom = ' that was sent from ';
-  static const String deliverMoney = ' told you, \'I will deliver the Money ';
+  static const String deliverMoney = " told you, 'I will deliver the Money ";
   static const String asSoonAsPossible = " as soon as possible!'";
 
   static bool lineInteresting({required String line}) {

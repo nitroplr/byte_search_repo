@@ -101,13 +101,16 @@ class BenchResult {
   BenchResult(this.totalLines, this.hits);
 }
 
+/*
 void _debugMismatch(Uint8List fileBytes) {
   int start = 0;
   int lineNo = 0;
   final n = fileBytes.length;
 
   while (start < n) {
-    int end = indexOfByte(bytes:fileBytes,value:  10 /*\n*/, start: start);
+    int end = indexOfByte(bytes:fileBytes,value:  10 */
+/*\n*//*
+, start: start);
     if (end == -1) end = n;
     lineNo++;
 
@@ -133,6 +136,7 @@ void _debugMismatch(Uint8List fileBytes) {
     start = end + 1;
   }
 }
+*/
 
 /// Your byte-level scan: no decoding, no per-line string allocation.
 /// IMPORTANT: This uses the SAME logical structure/order as the String.contains baseline.

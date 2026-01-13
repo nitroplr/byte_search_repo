@@ -65,6 +65,13 @@ class BytePatterns {
     return false;
   }
 
+  static bool isChatChannelLine({required Uint8List bytes}) {
+    if (_chatChannelNamePattern == null) return false;
+    final int start = afterTimestampStart(bytes: bytes);
+    if (_chatChannelNamePattern?.hasMatch(haystack: bytes, start: start) ?? false) return true;
+    return false;
+  }
+
   static bool isLootGivenLine({required Uint8List bytes}) {
     final int start = afterTimestampStart(bytes: bytes);
     // These three must appear in order.
@@ -82,6 +89,16 @@ class BytePatterns {
     return startsWithBytes(bytes: bytes, prefix: dashes, start: start) &&
         endsWithBytes(bytes: bytes, suffix: dashesPeriodBytes, start: start) &&
         (youHaveLooted.hasMatch(haystack: bytes, start: start) || hasLooted.hasMatch(haystack: bytes, start: start));
+  }
+
+  static bool isPlatParcelReceived({required Uint8List bytes}) {
+    final int start = afterTimestampStart(bytes: bytes);
+    return _containsInOrder(bytes: bytes, patterns: [handsYouTheMoney, thatWasSentFrom], start: start);
+  }
+
+  static bool isPlatParcelSent({required Uint8List bytes}) {
+    final int start = afterTimestampStart(bytes: bytes);
+    return _containsInOrder(bytes: bytes, patterns: [deliverMoney, asSoonAsPossible], start: start);
   }
 
   /// Returns the index immediately after "] " if present, else 0.

@@ -24,7 +24,8 @@ Future<void> main() async {
     final RecordReader recordReader = RecordReader();
     final BinarySearchFile<DateTime> bsf = BinarySearchFile<DateTime>(
       recordReader: recordReader,
-      parseKey: (RecordSlice record) {
+      parseKey: (final RecordSlice record) {
+        //I don't care that this is slow work with a decoded string since it's doing a binary search on the lines of text
         return getLineTime(line: record.toStringUtf8());
       },
       compare: (a, b) => a.millisecondsSinceEpoch.compareTo(b.millisecondsSinceEpoch),
@@ -38,19 +39,40 @@ Future<void> main() async {
     // stream the records between the bounds with the chunker
     final Stream<RecordSlice> recordStream = chunker.openRandomAccessFileRecords(
       raf: raf,
-      recordReader: recordReader /*,
+      recordReader: recordReader,
       startOffset: lowerBound,
-      endOffsetExclusive: upperBound,*/,
+      endOffsetExclusive: upperBound,
     );
-
+    final Stopwatch a = Stopwatch()..start();
     await for (final RecordSlice record in recordStream) {
-      //filter out the majority of uninteresting lines
+      //filter out the majority of uninteresting lines cheaply
       if (BytePatterns.lineInterestingBytes(bytes: record.bytes)) {
-        if (BytePatterns.isLootedLine(bytes: record.bytes)) {
-
+        //do a more strict check and handle each type of line
+        if (BytePatterns.isLootGivenLine(bytes: record.bytes)) {
+          final String s = record.toStringUtf8();
+          print(s);
+          //app specific work with a String
+        } else if (BytePatterns.isLootedLine(bytes: record.bytes)) {
+          final String s = record.toStringUtf8();
+          print(s);
+          //app specific work with a String
+        } else if (BytePatterns.isChatChannelLine(bytes: record.bytes)) {
+          final String s = record.toStringUtf8();
+          print(s);
+          //app specific work with a String
+        } else if (BytePatterns.isPlatParcelReceived(bytes: record.bytes)) {
+          final String s = record.toStringUtf8();
+          print(s);
+          //app specific work with a String
+        } else if (BytePatterns.isPlatParcelSent(bytes: record.bytes)) {
+          final String s = record.toStringUtf8();
+          print(s);
+          //app specific work with a String
         }
       }
     }
+    a.stop();
+    print('runtime: ${a.elapsedMilliseconds}');
   } catch (e) {
     print(e);
   } finally {
