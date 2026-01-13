@@ -9,6 +9,12 @@
       <excludeFolder url="file://$MODULE_DIR$/demo/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/demo/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/demo/build" />
+      <excludeFolder url="file://$MODULE_DIR$/byte_search_io/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/byte_search_io/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/byte_search_io/build" />
+      <excludeFolder url="file://$MODULE_DIR$/byte_search_stream/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/byte_search_stream/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/byte_search_stream/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

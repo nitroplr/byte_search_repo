@@ -1,0 +1,23 @@
+name: byte_search_io
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.10.4
+
+platforms:
+  linux:
+  macos:
+  windows:
+  android:
+  ios:
+
+# Add regular dependencies here. todo: change to byte_search: ^version once it is published
+dependencies:
+  byte_search:
+    path: ../byte_search
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6

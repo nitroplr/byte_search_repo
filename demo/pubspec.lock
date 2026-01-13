@@ -48,6 +48,13 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  byte_search_io:
+    dependency: "direct main"
+    description:
+      path: "../byte_search_io"
+      relative: true
+    source: path
+    version: "1.0.0"
   cli_config:
     dependency: transitive
     description:

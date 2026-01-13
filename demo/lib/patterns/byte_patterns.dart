@@ -1,0 +1,119 @@
+import 'dart:typed_data';
+import 'package:byte_search/byte_search.dart';
+import 'package:demo/patterns/patterns.dart';
+
+class BytePatterns {
+  static BytePattern? _chatChannelNamePattern;
+
+  /// Mirrors: Patterns.chatChannelName = '$value:' - user set field in production app
+  /// patterns.dart setter should be used
+  static void syncFromPatterns() {
+    _chatChannelNamePattern = Patterns.chatChannelName == null
+        ? null
+        : BytePattern.fromAscii(needle: Patterns.chatChannelName!);
+  }
+
+  static BytePattern? get chatChannelNamePattern => _chatChannelNamePattern;
+
+  // Precompiled byte patterns
+  static final BytePattern wonThe = BytePattern.fromAscii(needle: Patterns.wonThe);
+  static final BytePattern rollOn = BytePattern.fromAscii(needle: Patterns.rollOn);
+  static final BytePattern withARoll = BytePattern.fromAscii(needle: Patterns.withARoll);
+  static final BytePattern wasGivenTo = BytePattern.fromAscii(needle: Patterns.wasGivenTo);
+  static final BytePattern wereGivenTo = BytePattern.fromAscii(needle: Patterns.wereGivenTo);
+  static final BytePattern youHaveLooted = BytePattern.fromAscii(needle: Patterns.youHaveLooted);
+  static final BytePattern hasLooted = BytePattern.fromAscii(needle: Patterns.hasLooted);
+
+  // Suffix used by line.endsWith('.--')
+  // Do a bytes suffix check (much faster than searching).
+  static final Uint8List dashesPeriodBytes = Uint8List.fromList(Patterns.dashesPeriod.codeUnits);
+  static final Uint8List dashes = Uint8List.fromList(Patterns.dashes.codeUnits);
+  static final BytePattern handsYouTheMoney = BytePattern.fromAscii(needle: Patterns.handsYouTheMoney);
+  static final BytePattern thatWasSentFrom = BytePattern.fromAscii(needle: Patterns.thatWasSentFrom);
+  static final BytePattern deliverMoney = BytePattern.fromAscii(needle: Patterns.deliverMoney);
+  static final BytePattern asSoonAsPossible = BytePattern.fromAscii(needle: Patterns.asSoonAsPossible);
+
+  /// Byte equivalent of Patterns.lineInteresting.
+  static bool lineInterestingBytes({required Uint8List bytes}) {
+    // Skip timestamp prefix: "[Mon Nov 03 22:47:08 2025] "
+    final int start = afterTimestampStart(bytes: bytes);
+
+    final BytePattern? chatChannel = _chatChannelNamePattern;
+    if (chatChannel != null && chatChannel.hasMatch(haystack: bytes, start: start)) return true;
+
+    if (wonThe.hasMatch(haystack: bytes, start: start) &&
+        rollOn.hasMatch(haystack: bytes, start: start) &&
+        withARoll.hasMatch(haystack: bytes, start: start)) {
+      return true;
+    }
+
+    if (endsWithBytes(bytes: bytes, suffix: dashesPeriodBytes)) return true;
+
+    if (wasGivenTo.hasMatch(haystack: bytes, start: start)) return true;
+    if (wereGivenTo.hasMatch(haystack: bytes, start: start)) return true;
+
+    if (handsYouTheMoney.hasMatch(haystack: bytes, start: start) &&
+        thatWasSentFrom.hasMatch(haystack: bytes, start: start)) {
+      return true;
+    }
+
+    if (deliverMoney.hasMatch(haystack: bytes, start: start) &&
+        asSoonAsPossible.hasMatch(haystack: bytes, start: start)) {
+      return true;
+    }
+
+    return false;
+  }
+
+  static bool isLootGivenLine({required Uint8List bytes}) {
+    final int start = afterTimestampStart(bytes: bytes);
+    // These three must appear in order.
+    if (_containsInOrder(bytes: bytes, patterns: [wonThe, rollOn, withARoll], start: start)) return true;
+
+    // These can appear anywhere.
+    if (wasGivenTo.hasMatch(haystack: bytes, start: start)) return true;
+    if (wereGivenTo.hasMatch(haystack: bytes, start: start)) return true;
+
+    return false;
+  }
+
+  static bool isLootedLine({required Uint8List bytes}) {
+    final int start = afterTimestampStart(bytes: bytes);
+    return startsWithBytes(bytes: bytes, prefix: dashes, start: start) &&
+        endsWithBytes(bytes: bytes, suffix: dashesPeriodBytes, start: start) &&
+        (youHaveLooted.hasMatch(haystack: bytes, start: start) || hasLooted.hasMatch(haystack: bytes, start: start));
+  }
+
+  /// Returns the index immediately after "] " if present, else 0.
+  /// This avoids scanning the timestamp for every pattern.
+  static int afterTimestampStart({required Uint8List bytes}) {
+    // Typical EQ log line starts with '['
+    if (bytes.isEmpty || bytes[0] != 0x5B /* '[' */ ) return 0;
+
+    // Find the first ']' (0x5D). Timestamp is short; cap the scan to stay cheap.
+    // 30 is plenty for "[Mon Nov 03 22:47:08 2025]"
+    final int cap = bytes.length < 30 ? bytes.length : 30;
+
+    for (int i = 1; i < cap; i++) {
+      if (bytes[i] == 0x5D /* ']' */ ) {
+        // If followed by a space, skip it too.
+        final int next = i + 1;
+        if (next < bytes.length && bytes[next] == 0x20 /* ' ' */ ) return next + 1;
+        return next;
+      }
+    }
+
+    return 0;
+  }
+
+  static bool _containsInOrder({required Uint8List bytes, required List<BytePattern> patterns, int start = 0}) {
+    int i = start;
+    for (final p in patterns) {
+      final int hit = p.indexOf(haystack: bytes, start: i);
+      if (hit == -1) return false;
+      // Move start forward so the next phrase must occur after this one.
+      i = hit + p.length;
+    }
+    return true;
+  }
+}

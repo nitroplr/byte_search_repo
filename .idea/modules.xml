@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/byte_search/byte_search.iml" filepath="$PROJECT_DIR$/byte_search/byte_search.iml" />
+      <module fileurl="file://$PROJECT_DIR$/byte_search_io/byte_search_io.iml" filepath="$PROJECT_DIR$/byte_search_io/byte_search_io.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/byte_search_repo.iml" filepath="$PROJECT_DIR$/.idea/byte_search_repo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/demo/demo.iml" filepath="$PROJECT_DIR$/demo/demo.iml" />
     </modules>
   </component>
 </project>

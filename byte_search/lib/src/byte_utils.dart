@@ -5,9 +5,9 @@ import 'byte_set.dart';
 /// Finds the first occurrence of [value] in [bytes] between [start] (inclusive)
 /// and [end] (exclusive). Returns -1 if not found.
 @pragma('vm:prefer-inline')
-int indexOfByte(Uint8List bytes, int value, {int start = 0, int? end}) {
-  final e = end ?? bytes.length;
-  final v = value & 0xFF;
+int indexOfByte({required Uint8List bytes, required int value, int start = 0, int? end}) {
+  final int e = end ?? bytes.length;
+  final int v = value & 0xFF;
   for (int i = start; i < e; i++) {
     if (bytes[i] == v) return i;
   }
@@ -17,8 +17,8 @@ int indexOfByte(Uint8List bytes, int value, {int start = 0, int? end}) {
 /// Finds the first byte in [bytes] that is contained in [set] between [start]
 /// (inclusive) and [end] (exclusive). Returns -1 if not found.
 @pragma('vm:prefer-inline')
-int indexOfAnyByte(Uint8List bytes, ByteSet set, {int start = 0, int? end}) {
-  final e = end ?? bytes.length;
+int indexOfAnyByte({required Uint8List bytes, required ByteSet set, int start = 0, int? end}) {
+  final int e = end ?? bytes.length;
   for (int i = start; i < e; i++) {
     if (set.contains(bytes[i])) return i;
   }
@@ -28,8 +28,8 @@ int indexOfAnyByte(Uint8List bytes, ByteSet set, {int start = 0, int? end}) {
 /// Finds the first byte in [bytes] that is NOT contained in [set] between [start]
 /// (inclusive) and [end] (exclusive). Returns -1 if not found.
 @pragma('vm:prefer-inline')
-int indexOfByteNotIn(Uint8List bytes, ByteSet set, {int start = 0, int? end}) {
-  final e = end ?? bytes.length;
+int indexOfByteNotIn({required Uint8List bytes, required ByteSet set, int start = 0, int? end}) {
+  final int e = end ?? bytes.length;
   for (int i = start; i < e; i++) {
     if (!set.contains(bytes[i])) return i;
   }
@@ -37,13 +37,13 @@ int indexOfByteNotIn(Uint8List bytes, ByteSet set, {int start = 0, int? end}) {
 }
 
 /// Returns true if [bytes] starts with [prefix] within [start]..[end).
-bool startsWithBytes(
-  Uint8List bytes,
-  Uint8List prefix, {
+bool startsWithBytes({
+  required Uint8List bytes,
+  required Uint8List prefix,
   int start = 0,
   int? end,
 }) {
-  final e = end ?? bytes.length;
+  final int e = end ?? bytes.length;
   if (prefix.isEmpty) return true;
   if (e - start < prefix.length) return false;
 
@@ -54,18 +54,18 @@ bool startsWithBytes(
 }
 
 /// Returns true if [bytes] ends with [suffix] within [start]..[end).
-bool endsWithBytes(
-  Uint8List bytes,
-  Uint8List suffix, {
+bool endsWithBytes({
+  required Uint8List bytes,
+  required Uint8List suffix,
   int start = 0,
   int? end,
 }) {
-  final e = end ?? bytes.length;
+  final int e = end ?? bytes.length;
   if (suffix.isEmpty) return true;
-  final n = e - start;
+  final int n = e - start;
   if (n < suffix.length) return false;
 
-  final s = e - suffix.length;
+  final int s = e - suffix.length;
   for (int i = 0; i < suffix.length; i++) {
     if (bytes[s + i] != suffix[i]) return false;
   }
