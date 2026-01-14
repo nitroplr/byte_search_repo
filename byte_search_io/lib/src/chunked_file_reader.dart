@@ -52,8 +52,8 @@ class ByteChunk {
 /// ```
 ///
 /// ## Chunk model
-/// - [chunkSize] is the number of *new bytes* read from disk per iteration.
-/// - [overlap] optionally prepends up to [overlap] bytes from the end of the
+/// - `chunkSize` is the number of *new bytes* read from disk per iteration.
+/// - `overlap` optionally prepends up to `overlap` bytes from the end of the
 ///   previous chunk to the front of the next chunk.
 ///
 /// When overlap is enabled, consumers should account for repeated bytes in the
@@ -68,7 +68,7 @@ class ByteChunk {
 /// If [closeRafOnDone] is `true`, methods that accept a [RandomAccessFile]
 /// will close it when the stream completes.
 ///
-/// Note: [openRandomAccessFileRange] uses its own [closeOnDone] parameter.
+/// Note: [openRandomAccessFileRange] uses its own `closeOnDone` parameter.
 class ChunkedFileReader {
   /// Whether to close the underlying [RandomAccessFile] when a stream completes.
   ///
@@ -292,7 +292,7 @@ class ChunkedFileReader {
   /// ## Parameters
   /// - [path]: Path to the file to read.
   /// - [recordReader]: Configuration for delimiter, scan limits, and CRLF trimming.
-  /// - [chunkSize]: Chunk size used for underlying range reads. Defaults to 4 MiB.
+  /// - [chunkSize]: Chunk size **in bytes** used for underlying range reads. Defaults to 4 MiB.
   /// - [startOffset]: Start offset for the stream. Defaults to 0.
   /// - [endOffsetExclusive]: Optional end offset (exclusive). Defaults to EOF.
   /// - [maxRecordBytes]: Maximum allowed record length before throwing. Defaults to 256 KiB.
@@ -343,13 +343,13 @@ class ChunkedFileReader {
   /// - uses a carry buffer to join records that cross chunk boundaries
   /// - yields [RecordSlice] instances with absolute offsets
   ///
-  /// If [recordReader.trimCarriageReturn] is `true`, a trailing `\r` is removed
+  /// If [RecordReader.trimCarriageReturn] is `true`, a trailing `\r` is removed
   /// before the delimiter (CRLF handling).
   ///
   /// ## Parameters
   /// - [raf]: Open file handle. The reader will call `setPosition`.
   /// - [recordReader]: Delimiter and CRLF configuration for record splitting.
-  /// - [chunkSize]: Chunk size used for underlying range reads. Defaults to 4 MiB.
+  /// - [chunkSize]: Chunk size **in bytes** used for underlying range reads. Defaults to 4 MiB.
   /// - [startOffset]: Start offset for the stream. Defaults to 0.
   /// - [endOffsetExclusive]: Optional end offset (exclusive). Defaults to EOF.
   /// - [maxRecordBytes]: Maximum allowed record length before throwing.

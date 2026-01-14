@@ -68,6 +68,7 @@ Future<void> main(List<String> args) async {
     //closeRafOnDone is false since we close it here
     //uncommenting below will print all records at target time
     final ChunkedFileReader chunker = ChunkedFileReader(closeRafOnDone: false);
+    // ignore: unused_local_variable
     await for (final record in chunker.openRandomAccessFileRecords(
       raf: raf,
       recordReader: recordReader /*,

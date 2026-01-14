@@ -58,7 +58,7 @@ class RecordSlice {
 
   /// The record length in bytes (`endOffsetExclusive - startOffset`).
   ///
-  /// This matches [bytes.length] for slices produced by [RecordReader].
+  /// This matches [RecordSlice.bytes].length for slices produced by [RecordReader].
   int get length => endOffsetExclusive - startOffset;
 
   @override
@@ -246,7 +246,7 @@ class RecordReader {
     final _EndResult endRes = await _findRecordEnd(raf: raf, from: clampedOffset, fileLength: len);
 
     int start = startRes.start;
-    int endExclusive = endRes.endExclusive;
+    final int endExclusive = endRes.endExclusive;
 
     if (endExclusive < start) {
       start = endExclusive;

@@ -22,8 +22,8 @@ import 'dart:typed_data';
 /// ```
 ///
 /// ## Empty pattern behavior
-/// If the needle is empty (`length == 0`), [indexOf] returns [start] and
-/// [hasMatch] returns `true`.
+/// If the needle is empty (`length == 0`), [indexOf] returns the provided `start`
+/// value and [hasMatch] returns `true`.
 ///
 /// See also:
 /// - `ByteSet` for constant-time membership checks when scanning.
@@ -50,7 +50,8 @@ class BytePattern {
   /// - [needle]: The byte sequence to search for.
   ///
   /// ## Empty pattern behavior
-  /// If `needle.isEmpty`, [indexOf] returns [start] and [hasMatch] returns `true`.
+  /// If `needle.isEmpty`, [indexOf] returns the provided `start` value and
+  /// [hasMatch] returns `true`.
   ///
   /// ## Performance
   /// Construction runs in `O(needle.length + 256)` time and allocates a small

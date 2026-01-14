@@ -8,12 +8,19 @@ analyzer:
 
 linter:
   rules:
+    # --- Type safety & API clarity ---
     always_declare_return_types: true
+    type_annotate_public_apis: true
+    avoid_dynamic_calls: true
+
+    # --- Code quality ---
     avoid_print: true
-    public_member_api_docs: true
     prefer_final_locals: true
     unnecessary_late: true
+    unnecessary_await_in_return: true
+    avoid_unused_constructor_parameters: true
+
+    # --- Documentation ---
+    public_member_api_docs: true
     comment_references: true
     dangling_library_doc_comments: true
-    avoid_unused_constructor_parameters: true
-    unnecessary_await_in_return: true

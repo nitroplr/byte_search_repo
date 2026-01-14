@@ -1,5 +1,9 @@
 library;
 
+import 'dart:io' show RandomAccessFile;
+import 'src/chunked_file_reader.dart' show ChunkedFileReader, ByteChunk;
+import 'src/record_reader.dart' show RecordReader, RecordSlice;
+import 'src/binary_search_file.dart' show BinarySearchFile;
 /// File-backed adapters and utilities for the `byte_search` ecosystem.
 ///
 /// `byte_search_io` complements `package:byte_search` by adding **disk-backed**
