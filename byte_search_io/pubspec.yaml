@@ -1,10 +1,19 @@
 name: byte_search_io
-description: A starting point for Dart libraries or applications.
-version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+description: Low-allocation building blocks for reading large delimiter-separated files with RandomAccessFile (chunking, record extraction, binary search).
+version: 0.1.0
+homepage: https://github.com/nitroplr/byte_search_repo
+repository: https://github.com/nitroplr/byte_search_repo
+issue_tracker: https://github.com/nitroplr/byte_search_repo/issues
+
+topics:
+  - performance
+  - parsing
+  - logging
+  - io
+  - bytes
 
 environment:
-  sdk: ^3.10.4
+  sdk: ">=3.10.4 <4.0.0"
 
 platforms:
   linux:
@@ -13,11 +22,13 @@ platforms:
   android:
   ios:
 
-# Add regular dependencies here. todo: change to byte_search: ^version once it is published
 dependencies:
-  byte_search:
-    path: ../byte_search
+  byte_search: ^0.1.0
 
 dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.6
+
+dependency_overrides:
+  byte_search:
+    path: ../byte_search

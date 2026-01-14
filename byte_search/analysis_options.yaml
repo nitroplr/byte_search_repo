@@ -8,8 +8,12 @@ analyzer:
 
 linter:
   rules:
-    - always_declare_return_types
-    - avoid_print
-    - public_member_api_docs
-    - prefer_final_locals
-    - unnecessary_late
+    always_declare_return_types: true
+    avoid_print: true
+    public_member_api_docs: true
+    prefer_final_locals: true
+    unnecessary_late: true
+    comment_references: true
+    dangling_library_doc_comments: true
+    avoid_unused_constructor_parameters: true
+    unnecessary_await_in_return: true

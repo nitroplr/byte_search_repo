@@ -3,35 +3,105 @@ import 'dart:typed_data';
 
 import 'package:byte_search_io/src/record_reader.dart';
 
-/// A chunk of bytes read from a file.
+/// A chunk of bytes read from a file, with absolute positioning information.
 ///
-/// [fileOffset] is the absolute byte offset in the file where [bytes] begins.
+/// A [ByteChunk] represents a contiguous region of file data that was read in
+/// one iteration of a chunking stream.
 ///
-/// When [overlap] is used, chunks after the first will include up to [overlap]
-/// bytes from the end of the previous chunk as a prefix.
+/// ## Offsets
+/// - [fileOffset] is the absolute byte offset in the file where [bytes] begins.
+/// - The chunk covers the range `[fileOffset, fileOffset + bytes.length)`.
+///
+/// ## Overlap
+/// When overlap is enabled, chunks after the first may include a prefix
+/// that repeats up to the configured overlap count from the previous chunk’s tail.
+/// In that case, [fileOffset] points to the start of the overlapped prefix.
+///
+/// ## End-of-stream
+/// [isLast] indicates whether this is the final chunk for the requested range.
 class ByteChunk {
+  /// The bytes for this chunk (may include an overlap prefix depending on usage).
   final Uint8List bytes;
+
+  /// Absolute file offset where [bytes] begins.
   final int fileOffset;
+
+  /// Whether this is the final chunk in the stream for the requested range.
   final bool isLast;
 
+  /// Creates a [ByteChunk] with its bytes, absolute [fileOffset], and [isLast] marker.
   const ByteChunk({required this.bytes, required this.fileOffset, required this.isLast});
 
   @override
   String toString() => 'ByteChunk(offset=$fileOffset, len=${bytes.length}, last=$isLast)';
 }
 
-/// Reads a file in chunks using a [RandomAccessFile].
+/// Reads a file as a stream of byte chunks using a [RandomAccessFile].
 ///
+/// This reader is a low-allocation building block for:
+/// - large file scanning (pattern search, delimiter search)
+/// - record-aware parsing (via [openRandomAccessFileRecords])
+/// - file-range processing (via [openRandomAccessFileRange])
+///
+/// ## Example
+/// ```dart
+/// final reader = ChunkedFileReader();
+/// await for (final chunk in reader.openPath(path: 'log.txt', chunkSize: 1 << 20)) {
+///   // process chunk.bytes (absolute position = chunk.fileOffset)
+/// }
+/// ```
+///
+/// ## Chunk model
 /// - [chunkSize] is the number of *new bytes* read from disk per iteration.
-/// - [overlap] prepends up to [overlap] bytes from the previous chunk's tail.
-/// - [fileOffset] is the absolute file position of `bytes[0]`.
+/// - [overlap] optionally prepends up to [overlap] bytes from the end of the
+///   previous chunk to the front of the next chunk.
+///
+/// When overlap is enabled, consumers should account for repeated bytes in the
+/// overlapped prefix (e.g., avoid double-processing by tracking an effective
+/// “fresh” range).
+///
+/// ## File position side-effects
+/// Methods on this class reposition the provided [RandomAccessFile] via
+/// `setPosition` during reading.
+///
+/// ## Resource ownership
+/// If [closeRafOnDone] is `true`, methods that accept a [RandomAccessFile]
+/// will close it when the stream completes.
+///
+/// Note: [openRandomAccessFileRange] uses its own [closeOnDone] parameter.
 class ChunkedFileReader {
-  /// If true, closes the underlying [RandomAccessFile] when the stream completes.
+  /// Whether to close the underlying [RandomAccessFile] when a stream completes.
+  ///
+  /// This applies to methods that accept an existing [RandomAccessFile].
+  /// For path-based methods, the file is also closed by the time the stream
+  /// completes (either by the delegated method when [closeRafOnDone] is `true`,
+  /// or by the path method itself when it is `false`).
   final bool closeRafOnDone;
 
+  /// Creates a [ChunkedFileReader].
+  ///
+  /// ## Parameters
+  /// - [closeRafOnDone]: Whether to close an owned/provided [RandomAccessFile]
+  ///   when streaming completes. Defaults to `true`.
   const ChunkedFileReader({this.closeRafOnDone = true});
 
-  /// Creates a chunk stream from a file path.
+  /// Opens [path] and streams the file as [ByteChunk]s.
+  ///
+  /// The file is opened in read mode and streamed from the beginning.
+  ///
+  /// ## Parameters
+  /// - [path]: Path to the file to read.
+  /// - [chunkSize]: Number of new bytes read per iteration. Must be > 0.
+  /// - [overlap]: Number of bytes to repeat from the previous chunk’s tail.
+  ///   Must be >= 0. Defaults to 0.
+  ///
+  /// ## Throws
+  /// - [ArgumentError] if [chunkSize] <= 0 or [overlap] < 0.
+  ///
+  /// ## Resource ownership
+  /// This method opens the file. If [closeRafOnDone] is `true`, the delegated
+  /// stream ([openRandomAccessFile]) will close it. Otherwise, this method closes
+  /// it after the stream completes.
   Stream<ByteChunk> openPath({required String path, required int chunkSize, int overlap = 0}) async* {
     if (chunkSize <= 0) {
       throw ArgumentError.value(chunkSize, 'chunkSize', 'must be > 0');
@@ -42,15 +112,29 @@ class ChunkedFileReader {
     final raf = await File(path).open(mode: FileMode.read);
     yield* openRandomAccessFile(raf: raf, chunkSize: chunkSize, overlap: overlap);
 
-    ///close since we own the raf
+    // We opened raf here, so we must ensure it gets closed.
+    // If closeRafOnDone is true, openRandomAccessFile() will close it in its finally.
+    // Otherwise, we close it here.
     if (!closeRafOnDone) {
       await raf.close();
     }
   }
 
-  /// Creates a chunk stream from an already-open [RandomAccessFile].
+  /// Streams an already-open [RandomAccessFile] as [ByteChunk]s.
   ///
   /// The file position is set to 0 before reading.
+  ///
+  /// ## Parameters
+  /// - [raf]: Open file handle. The reader will call `setPosition`.
+  /// - [chunkSize]: Number of new bytes read per iteration. Must be > 0.
+  /// - [overlap]: Number of bytes to repeat from the previous chunk’s tail.
+  ///   Must be >= 0. Defaults to 0.
+  ///
+  /// ## Throws
+  /// - [ArgumentError] if [chunkSize] <= 0 or [overlap] < 0.
+  ///
+  /// ## Resource ownership
+  /// If [closeRafOnDone] is `true`, [raf] is closed when the stream completes.
   Stream<ByteChunk> openRandomAccessFile({
     required RandomAccessFile raf,
     required int chunkSize,
@@ -121,13 +205,30 @@ class ChunkedFileReader {
     }
   }
 
-  /// Creates a chunk stream for a byte range [startOffset, endOffsetExclusive).
+  /// Streams a file subrange as [ByteChunk]s for `[startOffset, endOffsetExclusive)`.
   ///
-  /// This is similar to [openRandomAccessFile] but lets you limit IO to a smaller region.
-  /// No overlap is added by default; callers that implement their own record/line carry
-  /// generally do not need overlap.
+  /// This is similar to [openRandomAccessFile] but limits I/O to a smaller region.
+  /// This is commonly used for “search within a time window” after a binary search
+  /// has identified approximate boundaries.
   ///
-  /// If [closeOnDone] is true (default), this method will close [raf] when finished.
+  /// ## Overlap
+  /// Range streaming currently requires [overlap] to be `0` to avoid ambiguous
+  /// double-processing at boundaries.
+  ///
+  /// ## Parameters
+  /// - [raf]: Open file handle. The reader will call `setPosition`.
+  /// - [chunkSize]: Number of bytes read per iteration. Must be > 0.
+  /// - [startOffset]: Start offset (inclusive). Must be >= 0.
+  /// - [endOffsetExclusive]: End offset (exclusive). Must be >= [startOffset].
+  /// - [closeOnDone]: Whether to close [raf] when finished. Defaults to `true`.
+  ///
+  /// Offsets beyond EOF are clamped to the file length. If the clamped range is
+  /// empty, the stream yields nothing.
+  ///
+  /// ## Throws
+  /// - [ArgumentError] if [chunkSize] <= 0, [startOffset] < 0, or
+  ///   [endOffsetExclusive] < [startOffset].
+  /// - [ArgumentError] if [overlap] is not `0` (not supported for range reads).
   Stream<ByteChunk> openRandomAccessFileRange({
     required RandomAccessFile raf,
     required int chunkSize,
@@ -140,8 +241,6 @@ class ChunkedFileReader {
       throw ArgumentError.value(chunkSize, 'chunkSize', 'must be > 0');
     }
     if (overlap != 0) {
-      // Range reading with overlap can be added later if needed.
-      // For now, require 0 to avoid double-processing without extra metadata.
       throw ArgumentError.value(overlap, 'overlap', 'must be 0 for range reads');
     }
     if (startOffset < 0) {
@@ -184,16 +283,35 @@ class ChunkedFileReader {
     }
   }
 
-  /// Streams delimiter-separated records (e.g., lines) from a file path.
+  /// Opens [path] and streams delimiter-separated records (for example, lines).
   ///
-  /// This is record-aware and does NOT require overlap. It will not split records
-  /// across yielded items.
+  /// This is record-aware and does **not** require overlap. It will not split
+  /// records across yielded items; records that span chunk boundaries are handled
+  /// via an internal carry buffer.
+  ///
+  /// ## Parameters
+  /// - [path]: Path to the file to read.
+  /// - [recordReader]: Configuration for delimiter, scan limits, and CRLF trimming.
+  /// - [chunkSize]: Chunk size used for underlying range reads. Defaults to 4 MiB.
+  /// - [startOffset]: Start offset for the stream. Defaults to 0.
+  /// - [endOffsetExclusive]: Optional end offset (exclusive). Defaults to EOF.
+  /// - [maxRecordBytes]: Maximum allowed record length before throwing. Defaults to 256 KiB.
+  /// - [onChunkRecords]: Optional callback invoked per chunk with the first/last
+  ///   record yielded from that chunk.
+  ///
+  /// ## Throws
+  /// - [StateError] if a record exceeds [maxRecordBytes].
+  ///
+  /// ## Resource ownership
+  /// This method opens the file. If [closeRafOnDone] is `true`, the delegated
+  /// stream ([openRandomAccessFileRecords]) will close it. Otherwise, this method
+  /// closes it after the stream completes.
   Stream<RecordSlice> openPathRecords({
     required String path,
     required RecordReader recordReader,
-    int chunkSize = 1 << 22, // 4 mb
+    int chunkSize = 1 << 22, // 4 MiB
     int startOffset = 0,
-    int maxRecordBytes = 1 << 18, // 1/4 mb
+    int maxRecordBytes = 1 << 18, // 256 KiB
     int? endOffsetExclusive,
     void Function(int chunkIndex, RecordSlice? first, RecordSlice? last)? onChunkRecords,
   }) async* {
@@ -209,20 +327,47 @@ class ChunkedFileReader {
         onChunkRecords: onChunkRecords,
       );
     } finally {
-      ///close since we own the raf
+      // We opened raf here. openRandomAccessFileRecords() won't close it
+      // when closeRafOnDone is false, so close it here.
       if (!closeRafOnDone) {
         await raf.close();
       }
     }
   }
 
-  /// Streams delimiter-separated records (e.g., lines) from an open [RandomAccessFile].
+  /// Streams delimiter-separated records (for example, lines) from an open [RandomAccessFile].
   ///
-  /// - Uses a carry buffer to handle records that cross chunk boundaries.
-  /// - Yields [RecordSlice] with absolute [startOffset]/[endOffsetExclusive].
-  /// - If [recordReader.trimCarriageReturn] is true, trims trailing '\r' before '\n'.
+  /// This method:
+  /// - reads the requested byte range in chunks (no overlap required)
+  /// - allocates per yielded record (to return an owned byte buffer)
+  /// - uses a carry buffer to join records that cross chunk boundaries
+  /// - yields [RecordSlice] instances with absolute offsets
   ///
-  /// If [closeRafOnDone] is true for this [ChunkedFileReader], [raf] is closed when done.
+  /// If [recordReader.trimCarriageReturn] is `true`, a trailing `\r` is removed
+  /// before the delimiter (CRLF handling).
+  ///
+  /// ## Parameters
+  /// - [raf]: Open file handle. The reader will call `setPosition`.
+  /// - [recordReader]: Delimiter and CRLF configuration for record splitting.
+  /// - [chunkSize]: Chunk size used for underlying range reads. Defaults to 4 MiB.
+  /// - [startOffset]: Start offset for the stream. Defaults to 0.
+  /// - [endOffsetExclusive]: Optional end offset (exclusive). Defaults to EOF.
+  /// - [maxRecordBytes]: Maximum allowed record length before throwing.
+  /// - [onChunkRecords]: Optional callback invoked per chunk with the first/last
+  ///   record yielded from that chunk.
+  ///
+  /// ## Range semantics
+  /// If streaming a strict subrange (non-EOF end), the final record may be
+  /// returned with [RecordSlice.endTruncated] set to `true` if the record would
+  /// continue past [endOffsetExclusive].
+  ///
+  /// ## Throws
+  /// - [ArgumentError] if [chunkSize] <= 0, or if the start/end range is invalid.
+  /// - [StateError] if a record exceeds [maxRecordBytes].
+  ///
+  /// ## Resource ownership
+  /// If [closeRafOnDone] is `true` for this [ChunkedFileReader], [raf] is closed
+  /// when the stream completes.
   Stream<RecordSlice> openRandomAccessFileRecords({
     required RandomAccessFile raf,
     required RecordReader recordReader,
@@ -271,14 +416,14 @@ class ChunkedFileReader {
     try {
       RecordSlice? firstInChunk;
       RecordSlice? lastInChunk;
-      // Reuse your existing chunk-range reader (no overlap needed).
+
       await for (final ByteChunk chunk in openRandomAccessFileRange(
         raf: raf,
         chunkSize: chunkSize,
         overlap: 0,
         startOffset: start,
         endOffsetExclusive: endClamped,
-        closeOnDone: false, // we manage closing here using this.closeOnDone
+        closeOnDone: false,
       )) {
         firstInChunk = null;
         // Combine carry + fresh bytes
@@ -288,7 +433,6 @@ class ChunkedFileReader {
           data = chunk.bytes;
           dataOffset = chunk.fileOffset;
         } else {
-          // carryOffset should always match chunk.fileOffset - carry.length in this design
           data = Uint8List(carry.length + chunk.bytes.length);
           data.setRange(0, carry.length, carry);
           data.setRange(carry.length, data.length, chunk.bytes);
@@ -302,7 +446,6 @@ class ChunkedFileReader {
         for (int i = 0; i < data.length; i++) {
           if (data[i] != delim) continue;
 
-          // Record bytes are [recordStartIndex, i) (delimiter excluded)
           int endIndexExclusive = i;
 
           // Trim CR if configured and present
@@ -341,7 +484,7 @@ class ChunkedFileReader {
           }
         }
 
-        // Whatever remains after the last delimiter becomes the new carry.
+        // Remainder becomes the new carry.
         if (recordStartIndex >= data.length) {
           carry = Uint8List(0);
           carryOffset = dataOffset + data.length;
@@ -356,7 +499,7 @@ class ChunkedFileReader {
         chunkIndex++;
       }
 
-      // End of range/file
+      // End of range/file: emit trailing partial record if present.
       if (carry.isNotEmpty) {
         final int absStart = carryOffset;
         final int absEnd = carryOffset + carry.length;
