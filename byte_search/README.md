@@ -39,6 +39,7 @@ Low-level helpers for common byte-scanning tasks:
 - `indexOfByteNotIn`
 - `startsWithBytes`
 - `endsWithBytes`
+- `containsInOrder`
 
 All APIs operate directly on `Uint8List` and are allocation-free on the hot path.
 

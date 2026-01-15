@@ -26,40 +26,65 @@ class Patterns {
   static const String asSoonAsPossible = " as soon as possible!'";
 
   static bool lineInteresting({required String line}) {
-    int start = _afterTimestampStartString(line: line);
-    if (_chatChannelName != null && line.contains(_chatChannelName!, start)) return true;
-    if ((line.contains(wonThe, start) && line.contains(rollOn, start) && line.contains(withARoll, start))) return true;
-    if (line.endsWith(dashesPeriod)) return true;
-    if (line.contains(wasGivenTo, start)) return true;
-    if (line.contains(wereGivenTo, start)) return true;
-    if ((line.contains(handsYouTheMoney, start) && line.contains(thatWasSentFrom, start))) return true;
-    if ((line.contains(deliverMoney, start) && line.contains(asSoonAsPossible, start))) return true;
+    // Skip timestamp prefix: "[Mon Nov 03 22:47:08 2025] "
+    final int start = _afterTimestampStartString(line: line);
+    if (isChatChannelLine(line: line, start: start)) return true;
+    if (isLootGivenLine(line: line, start: start)) return true;
+    if (isLootedLine(line: line, start: start)) return true;
+    if (isPlatParcelReceived(line: line, start: start)) return true;
+    if (isPlatParcelSent(line: line, start: start)) return true;
     return false;
   }
 
-  static bool isLootGivenLine({required String line}) {
-    return (line.contains(wonThe) && line.contains(rollOn) && line.contains(withARoll)) ||
-        line.contains(wasGivenTo) ||
-        line.contains(wereGivenTo);
+  static bool isChatChannelLine({required String line, int? start}) {
+    if (_chatChannelName == null) return false;
+    start = start ?? _afterTimestampStartString(line: line);
+    if (line.contains(_chatChannelName!, start)) return true;
+    return false;
   }
 
-  static bool isLootedLine({required String line}) {
-    return line.endsWith(dashesPeriod) && (line.contains(youHaveLooted) || line.contains(hasLooted));
+  static bool isLootGivenLine({required String line, int? start}) {
+    start = start ?? _afterTimestampStartString(line: line);
+    // These three must appear in order.
+    if (_containsInOrder(s: line, needles: [wonThe, rollOn, withARoll], start: start)) return true;
+
+    // These can appear anywhere.
+    if (line.contains(wasGivenTo, start)) return true;
+    if (line.contains(wereGivenTo, start)) return true;
+
+    return false;
+  }
+
+  static bool isLootedLine({required String line, int? start}) {
+    start = start ?? _afterTimestampStartString(line: line);
+    return line.startsWith(dashes, start) &&
+        line.endsWith(dashesPeriod) &&
+        (line.contains(youHaveLooted, start) || line.contains(hasLooted, start));
+  }
+
+  static bool isPlatParcelReceived({required String line, int? start}) {
+    start = start ?? _afterTimestampStartString(line: line);
+    return _containsInOrder(s: line, needles: [handsYouTheMoney, thatWasSentFrom], start: start);
+  }
+
+  static bool isPlatParcelSent({required String line, int? start}) {
+    start = start ?? _afterTimestampStartString(line: line);
+    return _containsInOrder(s: line, needles: [deliverMoney, asSoonAsPossible], start: start);
   }
 
   static int _afterTimestampStartString({required String line}) {
     // Typical EQ log line starts with '['
-    if (line.isEmpty || line.codeUnitAt(0) != 0x5B /* '[' */ ) return 0;
+    if (line.isEmpty || line.codeUnitAt(0) != 0x5B /* '[' */) return 0;
 
     // Find the first ']' (0x5D). Timestamp is short; cap the scan to stay cheap.
     // 30 is plenty for "[Mon Nov 03 22:47:08 2025]"
     final int cap = line.length < 30 ? line.length : 30;
 
     for (int i = 1; i < cap; i++) {
-      if (line.codeUnitAt(i) == 0x5D /* ']' */ ) {
+      if (line.codeUnitAt(i) == 0x5D /* ']' */) {
         // If followed by a space, skip it too.
         final int next = i + 1;
-        if (next < line.length && line.codeUnitAt(next) == 0x20 /* ' ' */ ) {
+        if (next < line.length && line.codeUnitAt(next) == 0x20 /* ' ' */) {
           return next + 1;
         }
         return next;
@@ -67,6 +92,17 @@ class Patterns {
     }
 
     return 0;
+  }
+
+  static bool _containsInOrder({required String s, required List<String> needles, int start = 0}) {
+    int i = start;
+    for (final n in needles) {
+      final int hit = s.indexOf(n, i);
+      if (hit == -1) return false;
+      // Move start forward so the next phrase must occur after this one.
+      i = hit + n.length;
+    }
+    return true;
   }
 
   static const Map<String, String> months = {

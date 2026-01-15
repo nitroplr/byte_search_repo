@@ -1,9 +1,4 @@
 library;
-
-import 'dart:io' show RandomAccessFile;
-import 'src/chunked_file_reader.dart' show ChunkedFileReader, ByteChunk;
-import 'src/record_reader.dart' show RecordReader, RecordSlice;
-import 'src/binary_search_file.dart' show BinarySearchFile;
 /// File-backed adapters and utilities for the `byte_search` ecosystem.
 ///
 /// `byte_search_io` complements `package:byte_search` by adding **disk-backed**
@@ -21,8 +16,8 @@ import 'src/binary_search_file.dart' show BinarySearchFile;
 /// ## What this library provides
 ///
 /// ### 1) Chunked file reading
-/// Use [ChunkedFileReader] to stream a file (or a subrange of a file) as
-/// [ByteChunk] objects. Each chunk includes:
+/// Use `ChunkedFileReader` to stream a file (or a subrange of a file) as
+/// `ByteChunk` objects. Each chunk includes:
 /// - the bytes read
 /// - the absolute file offset those bytes correspond to
 /// - an `isLast` flag for end-of-stream handling
@@ -32,26 +27,26 @@ import 'src/binary_search_file.dart' show BinarySearchFile;
 /// - avoiding `readAsBytes()` style full-file allocations
 ///
 /// ### 2) Record (delimiter) extraction
-/// Use [RecordReader] when you need to treat the file as a sequence of
+/// Use `RecordReader` when you need to treat the file as a sequence of
 /// delimiter-separated records (e.g., newline-delimited text).
 ///
 /// You can:
 /// - read the record that contains an arbitrary byte offset
 /// - read the previous/next record relative to an offset
 ///
-/// Records are returned as [RecordSlice] containing:
+/// Records are returned as `RecordSlice` containing:
 /// - absolute start/end offsets
 /// - bytes of the record (delimiter excluded)
 /// - truncation flags when scan limits are hit
 ///
 /// ### 3) Generic binary search over sorted record files
-/// Use [BinarySearchFile] to perform `lowerBound` / `upperBound` style searches
+/// Use `BinarySearchFile` to perform `lowerBound` / `upperBound` style searches
 /// over a delimiter-separated file that is **sorted by some monotonic key**.
 /// For example, a log file whose records begin with timestamps.
 ///
-/// [BinarySearchFile] returns **file offsets aligned to record starts**, which
-/// you can then feed into [ChunkedFileReader.openRandomAccessFileRange] or
-/// [ChunkedFileReader.openRandomAccessFileRecords] to scan only the relevant
+/// `BinarySearchFile` returns **file offsets aligned to record starts**, which
+/// you can then feed into `ChunkedFileReader.openRandomAccessFileRange` or
+/// `ChunkedFileReader.openRandomAccessFileRecords` to scan only the relevant
 /// portion of the file.
 ///
 /// ## Relationship to `package:byte_search`
@@ -70,11 +65,11 @@ import 'src/binary_search_file.dart' show BinarySearchFile;
 ///
 /// ## Notes on side effects and resource ownership
 ///
-/// Many APIs here accept a [RandomAccessFile] and will call `setPosition(...)`
+/// Many APIs here accept a `RandomAccessFile` and will call `setPosition(...)`
 /// during operation. Unless documented otherwise, **callers own the RAF** and
 /// must decide when to close it.
 ///
-/// In [ChunkedFileReader], closure behavior is configurable via
+/// In `ChunkedFileReader`, closure behavior is configurable via
 /// `ChunkedFileReader(closeRafOnDone: ...)`.
 export 'src/chunked_file_reader.dart';
 export 'src/binary_search_file.dart';

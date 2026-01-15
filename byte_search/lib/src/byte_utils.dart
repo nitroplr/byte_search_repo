@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import '../byte_search.dart';
 import 'byte_set.dart';
 
 /// Returns the index of the first occurrence of [value] in [bytes].
@@ -172,6 +173,51 @@ bool endsWithBytes({
   final int s = e - suffix.length;
   for (int i = 0; i < suffix.length; i++) {
     if (bytes[s + i] != suffix[i]) return false;
+  }
+  return true;
+}
+
+/// Returns whether all [patterns] occur in [bytes] in the given order.
+///
+/// This is a convenience for “phrase A then phrase B then phrase C” checks
+/// without allocating or converting to `String`.
+///
+/// The search starts at [start]. Each subsequent pattern must occur after the
+/// previous match. The next search begins at the end of the previous match
+/// (matches cannot overlap).
+///
+/// Special cases:
+/// - If [patterns] is empty, returns `true`.
+/// - Empty patterns are allowed. A `BytePattern` with `length == 0` matches at
+///   the current position and does not advance the search.
+///
+/// ## Example
+/// ```dart
+/// final wonThe = BytePattern.fromAscii(needle: ' won the ');
+/// final rollOn = BytePattern.fromAscii(needle: ' roll on ');
+/// final withARoll = BytePattern.fromAscii(needle: ' with a roll of ');
+///
+/// final List<BytePattern> pats = [wonThe, rollOn, withARoll];
+///
+/// final ok = containsInOrder(
+///   bytes: Uint8List.fromList(line.codeUnits),
+///   patterns: pats,
+///   start: messageStart,
+/// );
+/// ```
+///
+/// ## Performance
+/// Worst-case `O(k * n)` where `k = patterns.length` and `n` is the searched
+/// range. Does not allocate on the hot path. In practice this is fast when
+/// patterns are selective and mismatches are common.
+@pragma('vm:prefer-inline')
+bool containsInOrder({required Uint8List bytes, required List<BytePattern> patterns, int start = 0}) {
+  int i = start;
+  for (final p in patterns) {
+    final int hit = p.indexOf(haystack: bytes, start: i);
+    if (hit == -1) return false;
+    // Move start forward so the next phrase must occur after this one.
+    i = hit + p.length;
   }
   return true;
 }
