@@ -48,6 +48,7 @@ Binary search a **sorted** delimiter-separated file to find offsets:
 - `lowerBound(...)` → first record with key `>= target`
 - `upperBound(...)` → first record with key `> target`
 - supports skipping unparseable records (`parseKey` returns `null`)
+- throws `StateError` if a probe lands on a truncated record (increase `RecordReader` scan limits)
 
 This is ideal for “timestamp-sorted logs”: binary search the time bounds, then scan only that subrange.
 
@@ -86,7 +87,11 @@ import 'package:byte_search_io/byte_search_io.dart';
 Future<void> main() async {
   final raf = await File('log.txt').open(mode: FileMode.read);
 
-  final recordReader = RecordReader(delimiter: 0x0A /* '\n' */);
+  final recordReader = RecordReader(
+    delimiter: 0x0A /* '\n' */,
+    maxBackwardScanBytes: 1024 * 1024,
+    maxForwardScanBytes: 1024 * 1024,
+  );
   final chunked = ChunkedFileReader(closeRafOnDone: false);
 
   await for (final rec in chunked.openRandomAccessFileRecords(
@@ -120,7 +125,11 @@ DateTime? tryParseLogTime(Uint8List bytes) {
 Future<void> main() async {
   final raf = await File('sorted.log').open(mode: FileMode.read);
 
-  final recordReader = RecordReader(delimiter: 0x0A /* '\n' */);
+  final recordReader = RecordReader(
+    delimiter: 0x0A /* '\n' */,
+    maxBackwardScanBytes: 1024 * 1024,
+    maxForwardScanBytes: 1024 * 1024,
+  );
 
   final bs = BinarySearchFile<DateTime>(
     recordReader: recordReader,
@@ -179,19 +188,18 @@ This lets you:
 - create reproducible “bookmarks” into huge files
 
 **Truncation Flags**
+- `BinarySearchFile` may throw `StateError` if a probe lands on a truncated record slice.
+- Neighbor navigation may return `null` in truncation scenarios.
 
 When scan limits are hit:
 
 - `startTruncated == true` means the true record start was not found
 - `endTruncated == true` means the true record end was not found
 
-Binary search and neighbor navigation may return `null` / degrade gracefully in these cases.
-
 **Error Handling**
 
-Methods may throw `ArgumentError` / `StateError` for invalid parameters or oversized records.
-
-May rethrow I/O errors from `RandomAccessFile` operations or from `RecordReader`.
+- Methods may throw `ArgumentError` / `StateError` for invalid parameters or oversized records.
+- May rethrow I/O errors from `RandomAccessFile` operations or from `RecordReader`.
 
 ## Performance Notes
 

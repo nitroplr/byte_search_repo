@@ -6,7 +6,8 @@ import 'record_reader.dart';
 ///
 /// This utility assumes the file is logically a sequence of delimiter-separated
 /// records (for example, newline-separated lines), and that each record has a
-/// key that is monotonic non-decreasing across the file (for records where [parseKey] returns a non-null key).
+/// key that is monotonic non-decreasing across the file
+/// (for records where [parseKey] returns a non-null key).
 ///
 /// You provide:
 /// - [parseKey] to extract a key from a [RecordSlice]
@@ -48,8 +49,11 @@ import 'record_reader.dart';
 /// the file handle.
 ///
 /// ## Throws
-/// May rethrow I/O errors from [RandomAccessFile] operations or from
-/// [RecordReader].
+/// May rethrow I/O errors from [RandomAccessFile] operations or from [RecordReader].
+///
+/// Throws [StateError] if the probed record slice is truncated
+/// ([RecordSlice.startTruncated] || [RecordSlice.endTruncated]),
+/// because correctness requires true record boundaries (increase [RecordReader] scan limits).
 class BinarySearchFile<K> {
   /// Reads records (delimiter-separated) and provides record boundaries.
   final RecordReader recordReader;
@@ -108,6 +112,16 @@ class BinarySearchFile<K> {
 
       // Snap to a real record around mid.
       RecordSlice rec = await recordReader.readRecordContainingOffset(raf, mid, fileLength: len);
+
+      // Hard correctness guard: binary search requires true record boundaries.
+      if (rec.startTruncated || rec.endTruncated) {
+        throw StateError(
+          'BinarySearchFile probe landed on a truncated record slice '
+              '(startTruncated=${rec.startTruncated}, endTruncated=${rec.endTruncated}). '
+              'Increase RecordReader maxBackwardScanBytes/maxForwardScanBytes, or ensure '
+              'records are reasonably bounded for binary search.',
+        );
+      }
 
       // Try to parse a key; if null, step forward a bit.
       K? key = parseKey(rec);

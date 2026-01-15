@@ -371,7 +371,7 @@ class ChunkedFileReader {
   Stream<RecordSlice> openRandomAccessFileRecords({
     required RandomAccessFile raf,
     required RecordReader recordReader,
-    int chunkSize = 1 << 22, // 4 mb
+    int chunkSize = 1 << 22, // 4 MiB
     int startOffset = 0,
     int maxRecordBytes = 1 << 18,
     int? endOffsetExclusive,

@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import '../byte_search.dart';
-import 'byte_set.dart';
 
 /// Returns the index of the first occurrence of [value] in [bytes].
 ///

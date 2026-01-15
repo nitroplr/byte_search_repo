@@ -14,7 +14,10 @@ Future<void> _withTempTextFile({required String name, required String contents, 
   } finally {
     try {
       await dir.delete(recursive: true);
-    } catch (_) {}
+    } catch (e, st) {
+      // ignore: avoid_print
+      print('FAILED to delete temp dir: ${dir.path}\n$e\n$st');
+    }
   }
 }
 
@@ -43,19 +46,19 @@ void main() {
             final reader = RecordReader();
             final bs = _intKeySearch(reader);
 
-            final lb20 = await bs.lowerBound(raf: raf,target: 20);
+            final lb20 = await bs.lowerBound(raf: raf, target: 20);
             final recLb20 = await reader.readRecordContainingOffset(raf, lb20);
             expect(String.fromCharCodes(recLb20.bytes), '20 world');
 
-            final ub20 = await bs.upperBound(raf:raf,target: 20);
+            final ub20 = await bs.upperBound(raf: raf, target: 20);
             final recUb20 = await reader.readRecordContainingOffset(raf, ub20);
             expect(String.fromCharCodes(recUb20.bytes), '35 end');
 
-            final lb5 = await bs.lowerBound(raf: raf,target: 5);
+            final lb5 = await bs.lowerBound(raf: raf, target: 5);
             final recLb5 = await reader.readRecordContainingOffset(raf, lb5);
             expect(String.fromCharCodes(recLb5.bytes), '10 hello');
 
-            final ub100 = await bs.upperBound(raf:raf,target: 100);
+            final ub100 = await bs.upperBound(raf: raf, target: 100);
             expect(ub100, await raf.length());
           } finally {
             await raf.close();
@@ -74,15 +77,15 @@ void main() {
             final reader = RecordReader(trimCarriageReturn: true);
             final bs = _intKeySearch(reader);
 
-            final lb2 = await bs.lowerBound(raf: raf,target: 2);
+            final lb2 = await bs.lowerBound(raf: raf, target: 2);
             final rec2 = await reader.readRecordContainingOffset(raf, lb2);
             expect(String.fromCharCodes(rec2.bytes), '2 b');
 
-            final ub2 = await bs.upperBound(raf:raf,target: 2);
+            final ub2 = await bs.upperBound(raf: raf, target: 2);
             final rec3 = await reader.readRecordContainingOffset(raf, ub2);
             expect(String.fromCharCodes(rec3.bytes), '3 c');
 
-            final ub3 = await bs.upperBound(raf:raf,target: 3);
+            final ub3 = await bs.upperBound(raf: raf, target: 3);
             expect(ub3, await raf.length());
           } finally {
             await raf.close();
@@ -101,7 +104,7 @@ void main() {
             final reader = RecordReader();
             final bs = _intKeySearch(reader);
 
-            final lb20 = await bs.lowerBound(raf: raf,target: 20);
+            final lb20 = await bs.lowerBound(raf: raf, target: 20);
             final rec = await reader.readRecordContainingOffset(raf, lb20);
             expect(String.fromCharCodes(rec.bytes), '20 b');
           } finally {
@@ -126,7 +129,7 @@ void main() {
               compare: (a, b) => a.compareTo(b),
             );
 
-            final lb = await bs.lowerBound(raf: raf,target: 123);
+            final lb = await bs.lowerBound(raf: raf, target: 123);
             expect(lb, await raf.length());
           } finally {
             await raf.close();
@@ -147,11 +150,11 @@ void main() {
             final reader = RecordReader(trimCarriageReturn: true);
             final bs = _intKeySearch(reader);
 
-            final lb3 = await bs.lowerBound(raf: raf,target: 3);
+            final lb3 = await bs.lowerBound(raf: raf, target: 3);
             final rec3 = await reader.readRecordContainingOffset(raf, lb3);
             expect(String.fromCharCodes(rec3.bytes), '3 c');
 
-            final ub3 = await bs.upperBound(raf:raf,target: 3);
+            final ub3 = await bs.upperBound(raf: raf, target: 3);
             final rec4 = await reader.readRecordContainingOffset(raf, ub3);
             expect(String.fromCharCodes(rec4.bytes), '4 d');
           } finally {
@@ -172,19 +175,19 @@ void main() {
             final bs = _intKeySearch(reader);
             final text = await file.readAsString();
 
-            final lbBelow = await bs.lowerBound(raf: raf,target: 5);
+            final lbBelow = await bs.lowerBound(raf: raf, target: 5);
             expect(lbBelow, 0);
 
-            final lbMin = await bs.lowerBound(raf: raf,target: 10);
+            final lbMin = await bs.lowerBound(raf: raf, target: 10);
             expect(lbMin, 0);
 
-            final ubMin = await bs.upperBound(raf:raf,target: 10);
+            final ubMin = await bs.upperBound(raf: raf, target: 10);
             expect(ubMin, text.indexOf('20 '));
 
-            final ubMax = await bs.upperBound(raf:raf,target: 30);
+            final ubMax = await bs.upperBound(raf: raf, target: 30);
             expect(ubMax, text.length);
 
-            final lbAbove = await bs.lowerBound(raf: raf,target: 999);
+            final lbAbove = await bs.lowerBound(raf: raf, target: 999);
             expect(lbAbove, text.length);
           } finally {
             await raf.close();
@@ -205,12 +208,74 @@ void main() {
             final reader = RecordReader();
             final bs = _intKeySearch(reader);
 
-            final lb = await bs.lowerBound(raf: raf,target: 42);
-            final ub = await bs.upperBound(raf:raf,target: 42);
+            final lb = await bs.lowerBound(raf: raf, target: 42);
+            final ub = await bs.upperBound(raf: raf, target: 42);
 
             final len = await raf.length();
             expect(lb, inInclusiveRange(0, len));
             expect(ub, inInclusiveRange(0, len));
+          } finally {
+            await raf.close();
+          }
+        },
+      );
+    });
+
+    test('throws when RecordReader truncates a record (key at record start becomes unreadable)', () async {
+      final hugeTail = 'x' * 5000;
+      final contents = '20 $hugeTail\n30 y\n40 z\n';
+
+      await _withTempTextFile(
+        name: 'huge_first_record.txt',
+        contents: contents,
+        body: (file) async {
+          final raf = await file.open(mode: FileMode.read);
+          try {
+            final reader = RecordReader(
+              maxBackwardScanBytes: 64,
+              maxForwardScanBytes: 64,
+              scanBlockSize: 64,
+              trimCarriageReturn: true,
+            );
+            final bs = _intKeySearch(reader);
+
+            await expectLater(bs.lowerBound(raf: raf, target: 20), throwsA(isA<StateError>()));
+          } finally {
+            await raf.close();
+          }
+        },
+      );
+    });
+
+    test('works when scan limits are large enough to avoid truncation (huge record safe)', () async {
+      final hugeTail = 'x' * 5000;
+      final contents = '20 $hugeTail\n30 y\n40 z\n';
+
+      await _withTempTextFile(
+        name: 'huge_first_record_safe.txt',
+        contents: contents,
+        body: (file) async {
+          final raf = await file.open(mode: FileMode.read);
+          try {
+            // Large enough to find true start/end even from deep inside the huge record.
+            final reader = RecordReader(
+              maxBackwardScanBytes: 16 * 1024,
+              maxForwardScanBytes: 16 * 1024,
+              scanBlockSize: 1024,
+              trimCarriageReturn: true,
+            );
+            final bs = _intKeySearch(reader);
+
+            final text = await file.readAsString();
+
+            final lb20 = await bs.lowerBound(raf: raf, target: 20);
+            expect(lb20, 0);
+
+            final ub20 = await bs.upperBound(raf: raf, target: 20);
+            expect(ub20, text.indexOf('30 '));
+
+            final lb35 = await bs.lowerBound(raf: raf, target: 35);
+            expect(lb35, text.indexOf('40 '));
           } finally {
             await raf.close();
           }
