@@ -40,6 +40,7 @@ Low-level helpers for common byte-scanning tasks:
 - `startsWithBytes`
 - `endsWithBytes`
 - `containsInOrder`
+- `subBytes`
 
 All APIs operate directly on `Uint8List` and are allocation-free on the hot path.
 
@@ -76,7 +77,12 @@ int messageStart(Uint8List line) {
 
 bool interesting(Uint8List line) {
   final start = messageStart(line);
-  return pattern.hasMatch(haystack: line, start: start);
+
+  // Zero-copy view of the message body ([start, end) slicing, no copy).
+  final msg = subBytes(bytes: line, start: start);
+
+  // Search only within the message body.
+  return pattern.hasMatch(haystack: msg);
 }
 ```
 

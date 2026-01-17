@@ -33,15 +33,23 @@ void main() {
 
   bool interestingSingle(Uint8List line) {
     final start = messageStart(line);
-    return givenTo.hasMatch(haystack: line, start: start);
+
+    // Search only within the message body (zero-copy slice).
+    final msg = subBytes(bytes: line, start: start);
+
+    return givenTo.hasMatch(haystack: msg);
   }
 
   bool interestingOrdered(Uint8List line) {
     final start = messageStart(line);
+
+    // Search only within the message body (zero-copy slice).
+    final msg = subBytes(bytes: line, start: start);
+
     return containsInOrder(
-      bytes: line,
+      bytes: msg,
       patterns: orderedPhrases,
-      start: start,
+      start: 0, // start is now relative to msg
     );
   }
 

@@ -220,3 +220,38 @@ bool containsInOrder({required Uint8List bytes, required List<BytePattern> patte
   }
   return true;
 }
+
+/// This provides [start] to [end] (exclusive) slicing for bytes,
+/// returned as a view (no copy).
+/// If you need an owned copy, use `Uint8List.fromList(subBytes(...))`.
+///
+/// The returned list is a **view** into the same underlying buffer (no copy).
+/// Mutating the returned view will mutate the original [bytes] as well.
+///
+/// If [end] is omitted, `bytes.length` is used.
+///
+/// Special cases:
+/// - If `start == end`, returns an empty `Uint8List`.
+///
+/// Throws [RangeError] if `start` or `end` are out of bounds, or if `start > end`
+/// (same behavior as `Uint8List.sublistView`).
+///
+/// ## Example
+/// ```dart
+/// final bytes = Uint8List.fromList('hello world'.codeUnits);
+/// final sub = subBytes(bytes: bytes, start: 6, end: 11);
+/// // sub is the bytes for "world"
+/// ```
+///
+/// ## Parameters
+/// - [bytes]: The source data.
+/// - [start]: Start index (inclusive).
+/// - [end]: End index (exclusive). Defaults to `bytes.length`.
+///
+/// ## Performance
+/// Runs in `O(1)` time and does not allocate a new backing buffer.
+@pragma('vm:prefer-inline')
+Uint8List subBytes({required Uint8List bytes, required int start, int? end}) {
+  if (start == (end ?? bytes.length)) return Uint8List(0);
+  return Uint8List.sublistView(bytes, start, end);
+}
