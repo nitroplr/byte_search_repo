@@ -61,7 +61,7 @@ library;
 ///
 /// That import gives you:
 /// - file-backed readers (this package)
-/// - byte-search patterns/utilities (the core `byte_search` package)
+/// - byte-search patterns/utilities (the core `byte_search` package) `BytePattern`, `ByteSet`, and `Uint8List` extensions
 ///
 /// ## Notes on side effects and resource ownership
 ///

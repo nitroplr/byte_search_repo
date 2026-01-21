@@ -109,7 +109,7 @@ void _debugMismatch(Uint8List fileBytes) {
 
   while (start < n) {
     int end = indexOfByte(bytes:fileBytes,value:  10 */
-/*\n*//*
+/*\n*/ /*
 , start: start);
     if (end == -1) end = n;
     lineNo++;
@@ -148,7 +148,7 @@ BenchResult _runByteSearch(Uint8List fileBytes) {
   final int n = fileBytes.length;
 
   while (start < n) {
-    int end = indexOfByte(bytes:fileBytes,value:  10 /* \n */, start: start); // LF
+    int end = fileBytes.indexOfByte(10 /* \n */, start: start); // LF
     if (end == -1) end = n;
 
     lines++;
@@ -176,7 +176,7 @@ BenchResult _runStringContains(Uint8List fileBytes) {
   final int n = fileBytes.length;
 
   while (start < n) {
-    int end = indexOfByte(bytes:fileBytes,value:  10 /* \n */, start: start);
+    int end = fileBytes.indexOfByte(10 /* \n */, start: start);
     if (end == -1) end = n;
 
     final Uint8List lineBytes = Uint8List.sublistView(fileBytes, start, end);

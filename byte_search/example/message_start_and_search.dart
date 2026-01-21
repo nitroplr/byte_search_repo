@@ -19,11 +19,7 @@ void main() {
   int messageStart(Uint8List line) {
     // App-specific: skip prefix up to ']'. We only scan a small prefix because
     // the timestamp bracket is expected early.
-    final idx = indexOfAnyByte(
-      bytes: line,
-      set: bracket,
-      end: line.length < 64 ? line.length : 64,
-    );
+    final idx = line.indexOfAnyByte(bracket, end: line.length < 64 ? line.length : 64);
     if (idx == -1) return 0;
 
     int s = idx + 1;
@@ -35,7 +31,7 @@ void main() {
     final start = messageStart(line);
 
     // Search only within the message body (zero-copy slice).
-    final msg = subBytes(bytes: line, start: start);
+    final msg = line.subView(start);
 
     return givenTo.hasMatch(haystack: msg);
   }
@@ -44,13 +40,9 @@ void main() {
     final start = messageStart(line);
 
     // Search only within the message body (zero-copy slice).
-    final msg = subBytes(bytes: line, start: start);
+    final msg = line.subView(start);
 
-    return containsInOrder(
-      bytes: msg,
-      patterns: orderedPhrases,
-      start: 0, // start is now relative to msg
-    );
+    return msg.containsInOrder(orderedPhrases);
   }
 
   final lines = <String>[

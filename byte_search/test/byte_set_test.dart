@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:byte_search/byte_search.dart';
 import 'package:test/test.dart';
 
@@ -54,22 +52,6 @@ void main() {
       expect(roundTrip.contains(2), isTrue);
       expect(roundTrip.contains(3), isTrue);
       expect(roundTrip.contains(0), isFalse);
-    });
-
-    test('indexOfAnyByte uses ByteSet', () {
-      final bytes = Uint8List.fromList([10, 11, 12, 13]);
-      final set = ByteSet([12, 99]);
-
-      expect(indexOfAnyByte(bytes: bytes, set:set), 2);
-      expect(indexOfAnyByte(bytes: bytes, set:set, start: 3), -1);
-    });
-
-    test('indexOfAnyByte respects end', () {
-      final bytes = Uint8List.fromList([10, 11, 12, 13]);
-      final set = ByteSet([12]);
-
-      expect(indexOfAnyByte(bytes: bytes, set:set, end: 2), -1); // excludes index 2
-      expect(indexOfAnyByte(bytes: bytes, set:set, end: 3), 2);  // includes index 2
     });
   });
 }

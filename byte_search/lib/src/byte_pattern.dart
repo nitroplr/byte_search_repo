@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import '_range_check.dart';
 
 /// A precompiled byte-search pattern optimized for high-reject workloads.
 ///
@@ -95,7 +96,7 @@ class BytePattern {
     return BytePattern(bytes);
   }
 
-  /// Returns whether this pattern occurs in [haystack] within `[start, end)`.
+  /// Returns whether this pattern occurs in [haystack] within [start] (inclusive) and [end] (exclusive).
   ///
   /// This is equivalent to:
   /// ```dart
@@ -119,7 +120,7 @@ class BytePattern {
 
   /// Returns the index of the first occurrence of this pattern in [haystack].
   ///
-  /// Searches the range `[start, end)` (start inclusive, end exclusive).
+  /// Searches the range [start] (inclusive) to [end] (exclusive).
   ///
   /// ## Parameters
   /// - [haystack]: The byte buffer to search.
@@ -135,11 +136,16 @@ class BytePattern {
   /// ## Performance
   /// Typically sublinear on random data due to skipping; worst-case linear in the
   /// searched range. Does not allocate.
+  ///
+  /// ## Throws
+  /// - [RangeError] in debug mode if [start]/[end] are out of bounds or `start > end`
   int indexOf({required Uint8List haystack, int start = 0, int? end}) {
+    final int e = end ?? haystack.length;
+    checkRange(start, e, haystack.length);
+
     final int m = _m;
     if (m == 0) return start;
 
-    final int e = end ?? haystack.length;
     final int n = e - start;
     if (n < m) return -1;
 

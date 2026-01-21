@@ -140,4 +140,14 @@ void main() {
       expect(has, expected != -1);
     }
   });
+
+  test('indexOf throws RangeError for invalid range (debug only)', () {
+    final hay = _ascii('hello');
+    final pat = BytePattern.fromAscii(needle: 'he');
+
+    expect(() => pat.indexOf(haystack: hay, start: -1), throwsRangeError);
+    expect(() => pat.indexOf(haystack: hay, end: 999), throwsRangeError);
+    expect(() => pat.indexOf(haystack: hay, start: 4, end: 3), throwsRangeError);
+  });
+
 }

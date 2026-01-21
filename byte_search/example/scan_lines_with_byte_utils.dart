@@ -15,18 +15,18 @@ void main() {
   // - Check for a timestamp-style prefix like "[Mon ...]"
   // - Verify the line ends with '.' (just to demo endsWithBytes)
   bool looksLikeLogLine(Uint8List line) {
-    final start = indexOfByteNotIn(bytes: line, set: whitespace);
+    final start = line.indexOfByteNotIn(whitespace);
     if (start == -1) return false;
 
     // Must start with '[' after trimming leading whitespace.
-    if (!startsWithBytes(bytes: line, prefix: lbracket, start: start)) return false;
+    if (!line.startsWithBytes(lbracket, start: start)) return false;
 
     // Must contain a ']' somewhere soon-ish (not a full parser, just an example).
-    final close = indexOfByte(bytes: line, value: ']'.codeUnitAt(0), start: start, end: line.length);
+    final close = line.indexOfByte(']'.codeUnitAt(0), start: start, end: line.length);
     if (close == -1) return false;
 
     // Demonstrate suffix check: ends with '.' (common in some messages).
-    return endsWithBytes(bytes: line, suffix: ascii('.'));
+    return line.endsWithBytes(ascii('.'));
   }
 
   final samples = <String>[

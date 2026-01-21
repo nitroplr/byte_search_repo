@@ -16,6 +16,13 @@ This package is meant to be the “disk-first” layer for workflows like:
 > re-exported by this package and provides high-performance, allocation-free
 > byte searching primitives that can be applied within records or chunks.
 
+## Which package should I import?
+
+- If you only have bytes in memory (`Uint8List`) → use `byte_search`.
+- If you’re working with large files (`RandomAccessFile`) → use `byte_search_io`.
+
+`byte_search_io` **re-exports** `byte_search`, so import one or the other.
+
 ---
 
 ## Features
