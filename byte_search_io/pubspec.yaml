@@ -23,12 +23,7 @@ platforms:
   ios:
 
 dependencies:
-  #byte_search: ^0.1.0
-  byte_search:
-    git:
-      url: https://github.com/nitroplr/byte_search_repo.git
-      path: byte_search
-      ref: master
+  byte_search: ^0.1.0
 
 dev_dependencies:
   lints: ^6.0.0
